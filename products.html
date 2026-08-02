@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>จัดการสินค้า — Pixel CardShop POS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container">
+  <div class="main-header">
+    <img src="https://img2.pic.in.th/639920409_122130376431132753_2338159124093452873_n.jpg" alt="Logo" class="store-logo">
+    <h1 class="store-name">Pixel CardShop POS</h1>
+    <nav class="main-nav">
+      <a href="pos.html" class="nav-link">🛒 ขายสินค้า</a>
+      <a href="products.html" class="nav-link active">📦 จัดการสินค้า</a>
+      <a href="reports.html" class="nav-link">📊 รายงาน</a>
+    </nav>
+    <span id="staff-name" class="staff-name">พนักงาน: -</span>
+    <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
+  </div>
+
+  <div class="page-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+      <h2 style="margin: 0;">⚙️ จัดการสินค้า & สต๊อก</h2>
+      <button class="btn" style="background: #f39c12; width: auto; padding: 10px 16px;" onclick="openAddProductModal()">📦 + เพิ่มสินค้าใหม่</button>
+    </div>
+    <div id="product-table-container">
+      <p style="text-align:center; color:#999; padding: 30px;">กำลังโหลดข้อมูล...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const currentStaff = requireAuth();
+  let allProducts = [];
+
+  function openAddProductModal() {
+    let categories = [];
+    allProducts.forEach(p => { 
+      if (p.category && !categories.includes(p.category)) categories.push(p.category); 
+    });
+    
+    let catOptions = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+
+    Swal.fire({
+      title: '📦 เพิ่มสินค้าใหม่',
+      width: '500px',
+      html: `
+        <div style="text-align: left; background: #fcfcfc; padding: 20px; border-radius: 8px; border: 1px solid #eee; font-family: 'Kanit';">
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; font-weight: bold; color: #7f8c8d; font-size: 14px; margin-bottom: 5px;">1. บาร์โค้ด (ถ้ามี):</label>
+            <input id="swal-barcode" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 6px; background: #f8f9fa; border: 1px solid #ddd; font-family: 'Kanit';" placeholder="ยิงบาร์โค้ดหรือพิมพ์เลข">
+          </div>
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; font-weight: bold; color: #e74c3c; font-size: 14px; margin-bottom: 5px;">2. ชื่อสินค้า <span style="color: red;">(บังคับ)*</span>:</label>
+            <input id="swal-name" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 6px; border: 2px solid #e74c3c; background: #fffaf9; font-family: 'Kanit';" placeholder="เช่น การ์ดโปเกมอน">
+          </div>
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; font-weight: bold; color: #2980b9; font-size: 14px; margin-bottom: 5px;">3. หมวดหมู่สินค้า <span style="color: red;">(บังคับ)*</span>:</label>
+            <select id="swal-category" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 6px; border: 2px solid #3498db; background: #f4f9fc; font-family: 'Kanit';" onchange="if(this.value==='new'){document.getElementById('new-cat-wrapper').style.display='block';}else{document.getElementById('new-cat-wrapper').style.display='none';}">
+              <option value="">-- เลือกจากหมวดหมู่เดิม --</option>
+              ${catOptions}
+              <option value="new" style="color: #e67e22; font-weight: bold;">➕ เพิ่มหมวดหมู่ใหม่เอง...</option>
+            </select>
+          </div>
+          <div id="new-cat-wrapper" style="display: none; margin-bottom: 15px;">
+            <input id="swal-new-category" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 6px; background: #fffde7; border: 2px solid #f1c40f; font-family: 'Kanit';" placeholder="👉 พิมพ์ชื่อหมวดหมู่ใหม่ที่นี่">
+          </div>
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; font-weight: bold; color: #27ae60; font-size: 14px; margin-bottom: 5px;">4. ราคาขาย (บาท) <span style="color: red;">(บังคับ)*</span>:</label>
+            <input id="swal-price" type="number" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 6px; border: 2px solid #2ecc71; background: #f2fcf5; font-family: 'Kanit';" placeholder="เช่น 50">
+          </div>
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; font-weight: bold; color: #8e44ad; font-size: 14px; margin-bottom: 5px;">5. รูปภาพสินค้า (ถ้ามี):</label>
+            <input id="swal-image-file" type="file" accept="image/jpeg,image/png,image/webp" style="width: 100%; box-sizing: border-box; padding: 8px; border-radius: 6px; background: #f8f9fa; border: 1px solid #ddd; font-family: 'Kanit';">
+          </div>
+          <p style="font-size: 12px; color: #e74c3c; margin-top: 10px; text-align: center;">*สต๊อกเริ่มต้นจะไม่จำกัด สามารถกด "จัดการสินค้า" เพื่อเติมสต๊อกได้ภายหลัง</p>
+        </div>
+      `,
+      showCancelButton: true, 
+      confirmButtonText: '💾 บันทึกสินค้า', 
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#28a745',
+      preConfirm: () => {
+        const name = document.getElementById('swal-name').value;
+        const price = document.getElementById('swal-price').value;
+        let category = document.getElementById('swal-category').value;
+        if (category === 'new') category = document.getElementById('swal-new-category').value;
+        if (!name || !price || !category) Swal.showValidationMessage('กรุณากรอกข้อมูลช่องที่มีกรอบสีให้ครบถ้วนครับ!');
+        const imageFile = document.getElementById('swal-image-file').files[0] || null;
+        return { barcode: document.getElementById('swal-barcode').value, name: name, category: category, price: price, imageFile: imageFile }
+      }
+    }).then((res) => {
+      if (res.isConfirmed) {
+        Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+        api.addNewProduct(res.value.barcode, res.value.name, res.value.category, res.value.price, "").then((r) => {
+          if (r.success) {
+            if (res.value.imageFile) {
+              api.uploadProductImage(r.id, res.value.imageFile).then((imgRes) => {
+                if (!imgRes.success) Swal.fire('บันทึกสินค้าสำเร็จ แต่รูปอัปโหลดไม่สำเร็จ', imgRes.message, 'warning');
+                else Swal.fire('สำเร็จ!', '', 'success');
+                loadProducts();
+              });
+            } else {
+              Swal.fire('สำเร็จ!', '', 'success');
+              loadProducts();
+            }
+          } else {
+            Swal.fire('ผิดพลาด', r.message, 'error');
+          }
+        });
+      }
+    });
+  }
+
+// ==========================================
+// ⚙️ ระบบจัดการสินค้า, สต๊อก, และแก้ไขสินค้า
+// ==========================================
+function loadProducts() {
+    api.getProducts().then(function(products) {
+        allProducts = products;
+        manageProducts();
+    });
+}
+
+function manageProducts() {
+    let html = '<table class="data-table"><tr><th>สินค้า & สต๊อก</th><th style="text-align:center;">จัดการสถานะ</th></tr>';
+    
+    allProducts.forEach((p, index) => {
+      let btnColor = (p.status === "ปิด") ? "#e74c3c" : "#2ecc71";
+      let txt = (p.status === "ปิด") ? "🔴 ปิดขาย" : "🟢 เปิดขาย";
+      let currentStockValue = p.stock === "" ? "" : p.stock;
+      let thumb = p.image
+        ? `<img src="${p.image}" style="width:40px; height:40px; object-fit:cover; border-radius:4px; vertical-align:middle; margin-right:6px;">`
+        : `<span style="display:inline-block; width:40px; height:40px; background:#eee; border-radius:4px; vertical-align:middle; margin-right:6px; text-align:center; line-height:40px; font-size:10px; color:#999;">ไม่มีรูป</span>`;
+      html += `
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 10px;">
+            ${thumb}<b>${p.name}</b><br>
+            <span style="color: #7f8c8d; font-size: 12px;">หมวด: ${p.category} | ราคา: ${p.price} ฿</span><br>
+            <div style="margin-top: 8px; display: flex; align-items: center; gap: 5px;">
+              <span style="font-size: 12px; color: #e67e22; font-weight: bold;">สต๊อก:</span>
+              <input type="number" id="stock-input-${index}" value="${currentStockValue}" placeholder="ไม่จำกัด" style="width: 70px; padding: 4px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; text-align: center;">
+              <button onclick="saveStock(${p.id}, ${index})" style="background: #3498db; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">💾 บันทึก</button>
+            </div>
+            <div style="margin-top: 6px;">
+              <input type="file" id="image-input-${index}" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="changeProductImage(${p.id}, ${index})">
+              <button onclick="document.getElementById('image-input-${index}').click()" style="background: #8e44ad; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">📷 เปลี่ยนรูป</button>
+            </div>
+          </td>
+          <td style="padding: 10px; text-align: right; vertical-align: top;">
+            <button onclick="toggleStatus(${p.id})" style="background: ${btnColor}; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-bottom: 5px; width: 100%;">${txt}</button><br>
+            <button onclick="openEditProductModal(${index})" style="background: #f39c12; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-bottom: 5px; width: 100%;">✏️ แก้ไข</button><br>
+            <button onclick="deleteProd(${p.id})" style="background: #c0392b; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; width: 100%;">🗑️ ลบ</button>
+          </td>
+        </tr>`;
+    });
+    html += '</table>';
+    document.getElementById('product-table-container').innerHTML = allProducts.length
+      ? html
+      : '<p style="text-align:center; color:#999; padding: 30px;">ยังไม่มีสินค้าในระบบ กด "+ เพิ่มสินค้า" ด้านบนเพื่อเริ่มต้น</p>';
+}
+
+// ----------------------------------------------------
+// ฟังก์ชันใหม่: เปิดหน้าต่างสำหรับแก้ไขข้อมูลสินค้า
+// ----------------------------------------------------
+function openEditProductModal(index) {
+    let p = allProducts[index];
+    let categories = [];
+    allProducts.forEach(prod => { if (prod.category && !categories.includes(prod.category)) categories.push(prod.category); });
+    let catOptions = categories.map(c => `<option value="${c}" ${c === p.category ? 'selected' : ''}>${c}</option>`).join('');
+
+    Swal.fire({
+      title: '✏️ แก้ไขข้อมูลสินค้า',
+      html: `
+        <div style="text-align: left; font-family: 'Kanit'; font-size: 14px;">
+          <label style="font-weight:bold;">บาร์โค้ด:</label>
+          <input id="edit-barcode" class="swal2-input" value="${p.barcode || ''}" style="width: 85%; margin-top: 5px; margin-bottom: 15px;">
+          
+          <label style="font-weight:bold;">ชื่อสินค้า <span style="color:red;">*</span>:</label>
+          <input id="edit-name" class="swal2-input" value="${p.name}" style="width: 85%; margin-top: 5px; margin-bottom: 15px;">
+          
+          <label style="font-weight:bold;">หมวดหมู่ <span style="color:red;">*</span>:</label>
+          <select id="edit-category" class="swal2-input" style="width: 85%; margin-top: 5px; margin-bottom: 15px;" onchange="if(this.value==='new'){document.getElementById('edit-new-cat').style.display='block';}else{document.getElementById('edit-new-cat').style.display='none';}">
+            ${catOptions}
+            <option value="new">➕ เพิ่มหมวดหมู่ใหม่...</option>
+          </select>
+          <input id="edit-new-cat" class="swal2-input" placeholder="พิมพ์ชื่อหมวดหมู่ใหม่" style="display:none; width: 85%; margin-top: 5px; margin-bottom: 15px;">
+          
+          <label style="font-weight:bold;">ราคา <span style="color:red;">*</span>:</label>
+          <input id="edit-price" type="number" class="swal2-input" value="${p.price}" style="width: 85%; margin-top: 5px; margin-bottom: 15px;">
+          
+          <label style="font-weight:bold;">รูปภาพสินค้า:</label><br>
+          ${p.image ? `<img src="${p.image}" style="width:60px; height:60px; object-fit:cover; border-radius:6px; margin-top:5px;">` : '<span style="color:#999; font-size:12px;">ยังไม่มีรูป</span>'}
+          <p style="font-size:12px; color:#8e44ad; margin-top:5px;">* เปลี่ยนรูปได้จากปุ่ม "📷 เปลี่ยนรูป" ในหน้าจัดการสินค้า</p>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: '💾 บันทึกการแก้ไข',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#28a745',
+      preConfirm: () => {
+        let name = document.getElementById('edit-name').value.trim();
+        let price = document.getElementById('edit-price').value.trim();
+        let cat = document.getElementById('edit-category').value;
+        if(cat === 'new') cat = document.getElementById('edit-new-cat').value.trim();
+        
+        if (!name || !price || !cat) {
+          Swal.showValidationMessage('กรุณากรอก ชื่อ, ราคา และหมวดหมู่ ให้ครบถ้วน');
+        }
+        return {
+          barcode: document.getElementById('edit-barcode').value.trim(),
+          name: name,
+          category: cat,
+          price: price,
+          image: p.image || ""  // รูปเปลี่ยนผ่านปุ่ม "เปลี่ยนรูป" แยกต่างหาก ไม่ใช่ฟอร์มนี้ ส่งค่าเดิมกลับไปเฉยๆ
+        };
+      }
+    }).then((res) => {
+      if (res.isConfirmed) {
+        Swal.fire({ title: 'กำลังอัปเดต...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+        api.updateProductDetails(p.id, res.value).then(r => {
+          if(r.success) {
+            Swal.fire({ icon: 'success', title: 'อัปเดตสำเร็จ!', timer: 1500, showConfirmButton: false });
+            loadProducts(); // โหลดข้อมูลใหม่
+          } else {
+            Swal.fire('ผิดพลาด', r.message, 'error');
+          }
+        });
+      }
+    });
+}
+
+// ----------------------------------------------------
+// ฟังก์ชันบันทึกสต๊อก
+// ----------------------------------------------------
+function saveStock(productId, index) {
+    let newStockValue = document.getElementById('stock-input-' + index).value;
+    Swal.fire({ title: 'กำลังอัปเดตสต๊อก...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+    api.updateProductStock(productId, newStockValue).then((res) => {
+      if(res.success) {
+        loadProducts(); 
+        Swal.fire({ icon: 'success', title: 'บันทึกสต๊อกแล้ว!', timer: 1000, showConfirmButton: false });
+        setTimeout(manageProducts, 1000); 
+      } else {
+        Swal.fire('ผิดพลาด', res.message, 'error');
+      }
+    });
+}
+
+// ----------------------------------------------------
+// ฟังก์ชันใหม่: เปลี่ยนรูปสินค้า (อัปโหลดไฟล์จริง แทนการวาง URL แบบเดิม)
+// ----------------------------------------------------
+function changeProductImage(productId, index) {
+    let fileInput = document.getElementById('image-input-' + index);
+    let file = fileInput.files[0];
+    if (!file) return;
+
+    Swal.fire({ title: 'กำลังอัปโหลดรูป...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+    api.uploadProductImage(productId, file).then((res) => {
+      if (res.success) {
+        loadProducts();
+        Swal.fire({ icon: 'success', title: 'เปลี่ยนรูปแล้ว!', timer: 1000, showConfirmButton: false });
+        setTimeout(manageProducts, 1000);
+      } else {
+        Swal.fire('ผิดพลาด', res.message, 'error');
+      }
+    });
+}
+
+// ----------------------------------------------------
+// ฟังก์ชันเปิด/ปิดสถานะสินค้า
+// ----------------------------------------------------
+  function toggleStatus(productId) {
+    Swal.fire({ title: 'อัปเดต...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+    api.toggleProductStatus(productId).then((res) => { 
+      if (res.success) { 
+        loadProducts(); 
+        setTimeout(manageProducts, 800); 
+      } else {
+        // เพิ่มตัวดักจับ Error ป้องกันการหมุนค้าง
+        Swal.fire('ผิดพลาด', res.message, 'error');
+      }
+    });
+  }
+
+// ----------------------------------------------------
+// ฟังก์ชันลบสินค้า
+// ----------------------------------------------------
+  function deleteProd(productId) {
+    Swal.fire({ 
+      title: 'ลบสินค้า?', text: `ต้องการลบสินค้านี้ถาวรไหม?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'ลบเลย'
+    }).then((res) => {
+      if (res.isConfirmed) {
+        Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+        api.deleteProduct(productId).then((r) => { 
+          if(r.success) { 
+            Swal.fire('ลบแล้ว!', '', 'success'); 
+            loadProducts(); 
+          } else {
+            // เพิ่มตัวดักจับ Error ป้องกันการหมุนค้าง
+            Swal.fire('ผิดพลาด', r.message, 'error');
+          }
+        });
+      }
+    });
+  }
+
+  // --- สรุปยอด และ ปฏิทินย้อนหลัง ---
+
+  if (currentStaff) {
+    loadProducts();
+  }
+</script>
+</body>
+</html>
