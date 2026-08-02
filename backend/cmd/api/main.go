@@ -9,6 +9,7 @@ import (
 	"github.com/pixelcardshop/pos-backend/internal/config"
 	"github.com/pixelcardshop/pos-backend/internal/db"
 	"github.com/pixelcardshop/pos-backend/internal/handlers"
+	"github.com/pixelcardshop/pos-backend/internal/storage"
 )
 
 func main() {
@@ -35,7 +36,8 @@ func main() {
 	})
 
 	authHandler := handlers.NewAuthHandler(pool, cfg)
-	productHandler := handlers.NewProductHandler(pool)
+	storageClient := storage.NewClient(cfg.SupabaseURL, cfg.SupabaseServiceKey, cfg.ProductImageBucket)
+	productHandler := handlers.NewProductHandler(pool, storageClient)
 	transactionHandler := handlers.NewTransactionHandler(pool)
 	openTabHandler := handlers.NewOpenTabHandler(pool)
 	memberHandler := handlers.NewMemberHandler(pool)
@@ -57,6 +59,7 @@ func main() {
 			protected.PATCH("/products/:id/status", productHandler.ToggleStatus)
 			protected.PATCH("/products/:id/stock", productHandler.UpdateStock)
 			protected.DELETE("/products/:id", productHandler.Delete)
+			protected.POST("/products/:id/image", productHandler.UploadImage)
 
 			protected.POST("/transactions", transactionHandler.Create)
 			protected.GET("/transactions", transactionHandler.History)

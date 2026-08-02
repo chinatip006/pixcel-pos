@@ -1,15 +1,21 @@
 # Pixel CardShop POS — Backend (Go)
 
-## สถานะตอนนี้ (Step 1 + 2 + 3)
+## สถานะตอนนี้ (ครบทุกฟังก์ชัน)
 ทำงานได้จริงแล้ว:
 - `POST /api/auth/login`
 - `GET/POST /api/products`, `PUT/PATCH/DELETE /api/products/:id`
+- `POST /api/products/:id/image` — อัปโหลดรูปสินค้าเข้า Supabase Storage (ฟังก์ชันใหม่ ระบบเดิมไม่มี)
 - `POST   /api/transactions` — บันทึกบิล + ตัดสต๊อก + สะสมแต้มสมาชิก ใน 1 DB transaction เดียว
 - `GET    /api/transactions?date=YYYY-MM-DD` — ดูประวัติบิลรายวัน
 - `POST   /api/transactions/:orderId/cancel` — ยกเลิกบิล + คืนสต๊อก (ใช้ FOR UPDATE ล็อกแถวกันชนกัน)
 - `GET    /api/reports/daily?date=YYYY-MM-DD` — สรุปยอดขายรายวัน
+- open-tabs (พักบิล), members (สมาชิก+แต้ม) ครบทุก endpoint
 
-ยังไม่ทำ: open-tabs (พักบิล), members (สมาชิก+แต้ม)
+## ตั้งค่า Supabase Storage (สำหรับอัปโหลดรูปสินค้า)
+1. เข้า Supabase Dashboard > Storage > New bucket
+2. ตั้งชื่อ `product-images` (ต้องตรงกับ `PRODUCT_IMAGE_BUCKET` ใน env)
+3. เปิด **Public bucket** (toggle ให้เป็น public) เพื่อให้รูปโหลดแสดงในหน้าเว็บได้โดยไม่ต้องมี token
+4. คัดลอก `SUPABASE_URL` และ `SUPABASE_SERVICE_KEY` (service_role) มาใส่ env vars ตาม `.env.example`
 
 ## วิธีรันในเครื่องตัวเอง
 
