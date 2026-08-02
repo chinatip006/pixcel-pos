@@ -24,10 +24,13 @@ func main() {
 	r := gin.Default()
 
 	// CORS: อนุญาตเฉพาะโดเมน Firebase Hosting ของ frontend เท่านั้น
-	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{cfg.AllowedOrigin},
-		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Authorization", "Content-Type"},
+r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"https://pixcel-pos.web.app"}, // ใช้ลิงก์ที่มีตัว c
+		
+		// ⚠️ จุดสำคัญที่สุด: ต้องมี "OPTIONS" อยู่ในบรรทัดนี้ด้วย
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept"}, 
 		AllowCredentials: true,
 	}))
 
