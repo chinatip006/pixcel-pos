@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: pixel-pos-api
+    runtime: go
+    rootDir: backend
+    buildCommand: go build -o app ./cmd/api
+    startCommand: ./app
+    envVars:
+      - key: DATABASE_URL
+        sync: false   # ใส่เองใน Render dashboard จากค่า Supabase connection string
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      - key: ALLOWED_ORIGIN
+        sync: false   # ใส่โดเมน Firebase Hosting ของ frontend
+
+  - type: cron
+    name: pixel-pos-downgrade-members
+    runtime: go
+    rootDir: backend
+    schedule: "0 20 1 * *"   # เที่ยงคืนวันที่ 1 ของทุกเดือน (เวลาไทย = UTC+7 → 20:00 UTC ของสิ้นเดือนก่อนหน้า)
+    buildCommand: go build -o app ./cmd/api
+    startCommand: >
+      curl -s -X POST https://pixel-pos-api.onrender.com/api/admin/downgrade-members
+      -H "X-Cron-Secret: $CRON_SECRET"
+    envVars:
+      - key: CRON_SECRET
+        sync: false   # ต้องใส่ค่าเดียวกับที่ตั้งใน pixel-pos-api ด้านบน
