@@ -22,7 +22,7 @@ func NewProductHandler(db *pgxpool.Pool) *ProductHandler {
 // เทียบเท่าฟังก์ชันเดิม getProducts()
 func (h *ProductHandler) List(c *gin.Context) {
 	rows, err := h.DB.Query(context.Background(), `
-		SELECT id, barcode, name, category, price, image_url, status, stock
+		SELECT id, COALESCE(barcode, ''), name, category, price, image_url, status, stock
 		FROM products
 		ORDER BY id`)
 	if err != nil {
@@ -32,10 +32,9 @@ func (h *ProductHandler) List(c *gin.Context) {
 	defer rows.Close()
 
 	products := []models.Product{}
-    for rows.Next() {
+	for rows.Next() {
 		var p models.Product
 		if err := rows.Scan(&p.ID, &p.Barcode, &p.Name, &p.Category, &p.Price, &p.ImageURL, &p.Status, &p.Stock); err != nil {
-			// พ่น Error จริงออกมาดูบนหน้าเว็บ
 			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Scan Error: " + err.Error()})
 			return
 		}
@@ -44,7 +43,6 @@ func (h *ProductHandler) List(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": products})
 }
-
 // ---------- POST /api/products ----------
 // เทียบเท่าฟังก์ชันเดิม addNewProduct(barcode, name, category, price, imageUrl)
 type addProductRequest struct {
