@@ -32,10 +32,11 @@ func (h *ProductHandler) List(c *gin.Context) {
 	defer rows.Close()
 
 	products := []models.Product{}
-	for rows.Next() {
+    for rows.Next() {
 		var p models.Product
 		if err := rows.Scan(&p.ID, &p.Barcode, &p.Name, &p.Category, &p.Price, &p.ImageURL, &p.Status, &p.Stock); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "อ่านข้อมูลสินค้าผิดพลาด"})
+			// พ่น Error จริงออกมาดูบนหน้าเว็บ
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Scan Error: " + err.Error()})
 			return
 		}
 		products = append(products, p)
