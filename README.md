@@ -78,10 +78,15 @@ pixel-pos/
 │   ├── go.mod
 │   ├── .env.example
 │   └── README.md           # วิธีรัน backend ในเครื่อง + ทดสอบทีละ endpoint
-├── frontend/               # เว็บหน้าร้าน (ไฟล์เดิมปรับแล้ว)
-│   ├── index.html
-│   ├── api.js               # ตัวแทน google.script.run เดิม เปลี่ยนไปยิง REST API จริง
+├── frontend/               # เว็บหน้าร้าน (แยกเป็นหลายหน้า)
+│   ├── index.html          # หน้าทางเข้า เช็ค login แล้วส่งไป login.html หรือ pos.html อัตโนมัติ
+│   ├── login.html          # หน้าเข้าสู่ระบบ
+│   ├── pos.html            # หน้าขายสินค้าหลัก (ตะกร้า, ชำระเงิน, พักบิล, ระบบสมาชิก)
+│   ├── products.html       # หน้าจัดการสินค้า/สต๊อก/รูปภาพ
+│   ├── reports.html        # หน้ารายงาน (ดู/ยกเลิกบิล, สรุปยอด, แดชบอร์ดรายได้)
+│   ├── api.js               # ตัวแทน google.script.run เดิม เปลี่ยนไปยิง REST API จริง + auth helper (requireAuth/logout)
 │   ├── config.js            # ตั้ง URL backend ที่นี่
+│   ├── styles.css           # CSS กลางที่ทุกหน้าใช้ร่วมกัน
 │   └── firebase.json
 ├── render.yaml              # deploy backend + cron job อัตโนมัติ
 └── .gitignore
