@@ -22,7 +22,15 @@ func NewProductHandler(db *pgxpool.Pool) *ProductHandler {
 // เทียบเท่าฟังก์ชันเดิม getProducts()
 func (h *ProductHandler) List(c *gin.Context) {
 	rows, err := h.DB.Query(context.Background(), `
-		SELECT id, COALESCE(barcode, ''), name, category, price, image_url, status, stock
+		SELECT 
+			id, 
+			COALESCE(barcode, '') AS barcode, 
+			name, 
+			COALESCE(category, '') AS category, 
+			price, 
+			COALESCE(image_url, '') AS image_url, 
+			status, 
+			stock
 		FROM products
 		ORDER BY id`)
 	if err != nil {
