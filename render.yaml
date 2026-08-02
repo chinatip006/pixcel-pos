@@ -3,7 +3,7 @@ services:
     name: pixel-pos-api
     runtime: go
     rootDir: backend
-    buildCommand: go mod tidy && go build -o app ./cmd/api 
+    buildCommand: go build -o app ./cmd/api
     startCommand: ./app
     envVars:
       - key: DATABASE_URL
@@ -14,13 +14,19 @@ services:
         generateValue: true
       - key: ALLOWED_ORIGIN
         sync: false   # ใส่โดเมน Firebase Hosting ของ frontend
+      - key: SUPABASE_URL
+        sync: false   # จาก Supabase > Project Settings > Data API
+      - key: SUPABASE_SERVICE_KEY
+        sync: false   # จาก Supabase > Project Settings > API Keys > service_role (secret)
+      - key: PRODUCT_IMAGE_BUCKET
+        value: product-images
 
   - type: cron
     name: pixel-pos-downgrade-members
     runtime: go
     rootDir: backend
     schedule: "0 20 1 * *"   # เที่ยงคืนวันที่ 1 ของทุกเดือน (เวลาไทย = UTC+7 → 20:00 UTC ของสิ้นเดือนก่อนหน้า)
-    buildCommand: go mod tidy && go build -o app ./cmd/api 
+    buildCommand: go build -o app ./cmd/api
     startCommand: >
       curl -s -X POST https://pixel-pos-api.onrender.com/api/admin/downgrade-members
       -H "X-Cron-Secret: $CRON_SECRET"
