@@ -304,7 +304,9 @@ function calculateMemberDiscount(cartItems) {
 
     for (let i = 0; i < cartItems.length; i++) {
         let item = cartItems[i];
-        let itemTotal = item.price * item.qty;
+        // item.price คือราคารวมของบรรทัดนี้อยู่แล้ว (สะสมตาม qty มาจาก addToCart)
+        // ห้ามคูณ item.qty ซ้ำอีก ไม่งั้นซื้อ 2 ชิ้นจะโดนลด 2 เท่า, 3 ชิ้นลด 3 เท่า ผิดเพี้ยนไปเรื่อยๆ
+        let itemTotal = item.price;
         
         let isFoodOrDrink = (item.category === "อาหาร" || item.category === "เครื่องดื่ม" || item.category === "ท็อปปิ้ง");
         let isBox = (item.category === "Box" || item.category === "แวนการ์ดยกกล่อง");
