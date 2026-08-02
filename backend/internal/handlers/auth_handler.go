@@ -41,18 +41,20 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		`SELECT emp_id, name, role FROM staff WHERE emp_id = $1`, empID)
 	err := row.Scan(&staff.EmpID, &staff.Name, &staff.Role)
 
-	if err == pgx.ErrNoRows {
+    if err == pgx.ErrNoRows {
 		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "❌ ไม่พบรหัสพนักงานนี้ กรุณาลองใหม่"})
 		return
 	}
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "เกิดข้อผิดพลาดของระบบ"})
+    if err != nil {
+		// เปลี่ยนบรรทัดนี้ชั่วคราว เพื่อให้มันพ่น Error ออกมาดู
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "DB Error: " + err.Error()})
 		return
 	}
 
-	token, err := auth.GenerateToken(h.Cfg.JWTSecret, staff, h.Cfg.JWTExpiryHours)
+    token, err := auth.GenerateToken(h.Cfg.JWTSecret, staff, h.Cfg.JWTExpiryHours)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "ออก token ไม่สำเร็จ"})
+		// เปลี่ยนบรรทัดนี้ด้วยเช่นกัน
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Token Error: " + err.Error()})
 		return
 	}
 
