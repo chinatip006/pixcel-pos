@@ -15,10 +15,17 @@ func NewPool(databaseURL string) (*pgxpool.Pool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	poolCfg, err := pgxpool.ParseConfig(databaseURL)
-	if err != nil {
-		return nil, fmt.Errorf("parse database url: %w", err)
-	}
+	import "strings"
+
+// เติมเงื่อนไขเช็คเพื่อต่อ ? หรือ & เข้าไปต่อท้าย URL 
+   connString := databaseURL
+    if !strings.Contains(connString, "?") {
+    connString += "?default_query_exec_mode=simple_protocol"
+    } else {
+    connString += "&default_query_exec_mode=simple_protocol"
+    }
+
+dbPool, err := pgxpool.New(context.Background(), connString)
 	poolCfg.MaxConns = 10
 	poolCfg.MinConns = 1
 
