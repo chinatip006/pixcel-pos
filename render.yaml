@@ -3,7 +3,7 @@ services:
     name: pixel-pos-api
     runtime: go
     rootDir: backend
-    buildCommand: go build -o app ./cmd/api
+    buildCommand: buildCommand: go mod tidy && go build -o app ./cmd/api 
     startCommand: ./app
     envVars:
       - key: DATABASE_URL
@@ -20,7 +20,7 @@ services:
     runtime: go
     rootDir: backend
     schedule: "0 20 1 * *"   # เที่ยงคืนวันที่ 1 ของทุกเดือน (เวลาไทย = UTC+7 → 20:00 UTC ของสิ้นเดือนก่อนหน้า)
-    buildCommand: go build -o app ./cmd/api
+    buildCommand: buildCommand: go mod tidy && go build -o app ./cmd/api 
     startCommand: >
       curl -s -X POST https://pixel-pos-api.onrender.com/api/admin/downgrade-members
       -H "X-Cron-Secret: $CRON_SECRET"
