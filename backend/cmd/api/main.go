@@ -26,7 +26,7 @@ func main() {
 	// CORS: อนุญาตเฉพาะโดเมน Firebase Hosting ของ frontend เท่านั้น
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{cfg.AllowedOrigin},
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
+		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
 	}))
