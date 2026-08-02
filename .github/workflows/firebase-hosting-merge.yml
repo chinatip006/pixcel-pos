@@ -15,3 +15,4 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_TOKEN }}
           projectId: pixcel-pos 
           channelId: live
+          entryPoint: frontend
