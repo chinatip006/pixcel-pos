@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>เข้าสู่ระบบ — Pixel CardShop POS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container">
+  <div class="main-header">
+    <img src="https://img2.pic.in.th/639920409_122130376431132753_2338159124093452873_n.jpg" alt="Logo" class="store-logo">
+    <h1 class="store-name">Pixel CardShop POS</h1>
+  </div>
+
+  <div id="login-screen">
+    <h2>🔐 เข้าสู่ระบบ POS</h2>
+    <input type="text" id="empId" placeholder="สแกนหรือกรอกรหัสพนักงาน" autofocus onkeydown="if(event.key==='Enter') login();"><br>
+    <button onclick="login()">เข้าสู่ระบบ</button>
+  </div>
+</div>
+
+<script>
+  // ถ้า login ค้างอยู่แล้ว (มี token เก่า) ข้ามหน้านี้ไปหน้าขายเลย
+  if (getToken() && getStaff()) {
+    location.href = "pos.html";
+  }
+
+  function login() {
+    let empId = document.getElementById("empId").value.trim();
+    if (!empId) return Swal.fire('กรุณากรอกรหัส', '', 'warning');
+
+    Swal.fire({ title: 'กำลังเข้าสู่ระบบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    api.checkLogin(empId).then(function (response) {
+      if (response.success) {
+        Swal.fire({ icon: 'success', title: 'เข้าสู่ระบบสำเร็จ!', timer: 800, showConfirmButton: false }).then(() => {
+          location.href = "pos.html";
+        });
+      } else {
+        Swal.fire('ข้อผิดพลาด', response.message, 'error');
+      }
+    });
+  }
+</script>
+</body>
+</html>

@@ -6,10 +6,37 @@
 
 const API_BASE_URL = window.API_BASE_URL;
 const TOKEN_KEY = "pixelpos_token";
+const STAFF_KEY = "pixelpos_staff";
 
 function getToken() { return localStorage.getItem(TOKEN_KEY); }
 function setToken(t) { localStorage.setItem(TOKEN_KEY, t); }
 function clearToken() { localStorage.removeItem(TOKEN_KEY); }
+
+function getStaff() {
+  try { return JSON.parse(localStorage.getItem(STAFF_KEY)); } catch (e) { return null; }
+}
+function setStaff(staff) { localStorage.setItem(STAFF_KEY, JSON.stringify(staff)); }
+function clearStaff() { localStorage.removeItem(STAFF_KEY); }
+
+// เรียกจากทุกหน้าที่ต้อง login ก่อน (pos.html, products.html, reports.html)
+// ถ้ายังไม่ login จะเด้งกลับ login.html ให้อัตโนมัติ คืนค่า staff object ถ้า login อยู่แล้ว
+function requireAuth() {
+  const token = getToken();
+  const staff = getStaff();
+  if (!token || !staff) {
+    location.href = "login.html";
+    return null;
+  }
+  const el = document.getElementById("staff-name");
+  if (el) el.innerText = "พนักงาน: " + staff.name;
+  return staff;
+}
+
+function logout() {
+  clearToken();
+  clearStaff();
+  location.href = "login.html";
+}
 
 // apiCall ไม่ throw/reject เวลาเจอ error ธุรกิจ (เช่น validation ไม่ผ่าน) — จะ resolve เป็น
 // { success:false, message: "..." } เหมือนพฤติกรรมเดิมของ google.script.run เสมอ
@@ -58,7 +85,10 @@ const api = {
   // ---------- auth ----------
   checkLogin: (empId) =>
     apiCall("POST", "/api/auth/login", { emp_id: empId }, false).then((r) => {
-      if (r.success) setToken(r.token);
+      if (r.success) {
+        setToken(r.token);
+        setStaff({ name: r.name, empId: r.emp_id, role: r.role });
+      }
       return { success: r.success, message: r.message, name: r.name, empId: r.emp_id, role: r.role };
     }),
 
@@ -86,7 +116,21 @@ const api = {
       category,
       price: parseFloat(price) || 0,
       image_url: image || "",
-    }),
+    }).then((r) => ({ success: r.success, message: r.message, id: r.id })),
+
+  // อัปโหลดไฟล์รูปจริง (ฟังก์ชันใหม่ที่ระบบเดิมไม่มี — เดิมกรอกแค่ URL รูป)
+  // ใช้ FormData แทน JSON เพราะเป็นการส่งไฟล์ ห้ามตั้ง Content-Type เองต้องให้ browser ตั้ง boundary ให้อัตโนมัติ
+  uploadProductImage: (id, file) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    return fetch(`${API_BASE_URL}/api/products/${id}/image`, {
+      method: "POST",
+      headers: { Authorization: "Bearer " + getToken() },
+      body: formData,
+    })
+      .then((res) => res.json())
+      .catch(() => ({ success: false, message: "อัปโหลดรูปไม่สำเร็จ กรุณาลองใหม่" }));
+  },
 
   // ใช้ id แทนชื่อเดิม (oldName) — ของเดิม: updateProductDetails(oldName, newData)
   updateProductDetails: (id, newData) =>
