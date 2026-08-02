@@ -3,7 +3,7 @@ services:
     name: pixel-pos-api
     runtime: go
     rootDir: backend
-    buildCommand: buildCommand: go mod tidy && go build -o app ./cmd/api 
+    buildCommand: go mod tidy && go build -o app ./cmd/api 
     startCommand: ./app
     envVars:
       - key: DATABASE_URL
